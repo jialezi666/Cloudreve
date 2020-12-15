@@ -62,6 +62,22 @@ func (client *Client) getRequestURL(api string) string {
 	return base.String()
 }
 
+//修复删除失败
+func (client *Client) getDeleteRequestURL(api string) string {
+	var Delete_URL string;
+	if client.Endpoints.isInChina{
+	Delete_URL = "https://microsoftgraph.chinacloudapi.cn/v1.0"
+	}else{
+	Delete_URL = "https://graph.microsoft.com/v1.0"
+	}
+	base, _ := url.Parse(Delete_URL)
+	if base == nil {
+		return ""
+	}
+	base.Path = path.Join(base.Path, api)
+	return base.String()
+}
+
 // ListChildren 根据路径列取子对象
 func (client *Client) ListChildren(ctx context.Context, path string) ([]FileInfo, error) {
 	var requestURL string
@@ -345,7 +361,7 @@ func (client *Client) BatchDelete(ctx context.Context, dst []string) ([]string, 
 // 由于API限制，最多删除20个
 func (client *Client) Delete(ctx context.Context, dst []string) ([]string, error) {
 	body := client.makeBatchDeleteRequestsBody(dst)
-	res, err := client.requestWithStr(ctx, "POST", client.getRequestURL("$batch"), body, 200)
+	res, err := client.requestWithStr(ctx, "POST", client.getDeleteRequestURL("$batch"), body, 200)
 	if err != nil {
 		return dst, err
 	}
@@ -382,9 +398,12 @@ func (client *Client) makeBatchDeleteRequestsBody(files []string) string {
 	req := BatchRequests{
 		Requests: make([]BatchRequest, len(files)),
 	}
+	//修复删除失败
+	var Delete_Full_URL string = client.Endpoints.EndpointURL + "/drive/root:/"	
 	for i, v := range files {
 		v = strings.TrimPrefix(v, "/")
-		filePath, _ := url.Parse("/drive/root:/")
+		filePath, _ := url.Parse(Delete_Full_URL)
+		filePath.Path = strings.TrimPrefix(filePath.Path, "/v1.0")
 		filePath.Path = path.Join(filePath.Path, v)
 		req.Requests[i] = BatchRequest{
 			ID:     v,
