@@ -42,7 +42,7 @@ ARG TZ="Asia/Shanghai"
 
 ENV TZ ${TZ}
 
-COPY --from=be-builder /go/bin/cloudreve /cloudreve/cloudreve
+COPY --from=be-builder /go/bin/Cloudreve /cloudreve/cloudreve
 
 RUN apk upgrade \
     && apk add bash tzdata \
